@@ -7,7 +7,7 @@ resolver = "3"
 sdl2 = { version = "0.38.0" }
 pyo3 = { version = "0.23", features = ["extension-module"] }
 numpy = { version = "0.23" }
-ndarray = { version = "0.16" }
+ndarray = { version = "0.17" }
 wasm-bindgen = { version = "0.2" }
 
 # The emulator inner loop spans both crates (rlcade → nes_core). Without

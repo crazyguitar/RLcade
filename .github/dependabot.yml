@@ -10,6 +10,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      rust-python-ffi:
+        patterns:
+          - "pyo3"
+          - "pyo3-*"
+          - "numpy"
+          - "ndarray"
     open-pull-requests-limit: 5
 
   - package-ecosystem: "github-actions"

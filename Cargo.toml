@@ -1,0 +1,19 @@
+[workspace]
+members = ["crates/nes", "crates/rlcade"]
+default-members = ["crates/nes"]
+resolver = "3"
+
+[workspace.dependencies]
+sdl2 = { version = "0.38.0" }
+pyo3 = { version = "0.23", features = ["extension-module"] }
+numpy = { version = "0.23" }
+ndarray = { version = "0.16" }
+wasm-bindgen = { version = "0.2" }
+
+# The emulator inner loop spans both crates (rlcade → nes_core). Without
+# cross-crate inlining, per-cycle indirection costs dominate.
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"

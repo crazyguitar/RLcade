@@ -1,0 +1,21 @@
+[package]
+name = "nes"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+
+[lib]
+name = "nes_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nes"
+path = "src/main.rs"
+required-features = ["sdl2-backend"]
+
+[features]
+default = ["sdl2-backend"]
+sdl2-backend = ["sdl2"]
+
+[dependencies]
+sdl2 = { workspace = true, optional = true }

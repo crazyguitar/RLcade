@@ -3,11 +3,14 @@
 use std::collections::HashMap;
 
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyAny, PyDict};
 
 use crate::envs::smb::{Env, StepResult};
 use crate::py::Display;
 use crate::py::nes::PyScreen;
+
+type SingleStepReturn<'py> = (Py<PyAny>, f32, bool, bool, Bound<'py, PyDict>);
+type VecStepReturn = (Py<PyAny>, Py<PyAny>, Py<PyAny>, Py<PyAny>, Py<PyAny>);
 
 // Wrapper chain builder
 
@@ -162,7 +165,7 @@ impl PyNesSmbEnv {
         })
     }
 
-    fn reset<'py>(&mut self, py: Python<'py>) -> PyResult<(PyObject, Bound<'py, PyDict>)> {
+    fn reset<'py>(&mut self, py: Python<'py>) -> PyResult<(Py<PyAny>, Bound<'py, PyDict>)> {
         let info = self.env.reset();
         let arr = numpy::PyArray1::from_slice(py, self.env.obs());
         Ok((arr.into_any().unbind(), step_result_to_dict(py, &info)?))
@@ -172,7 +175,7 @@ impl PyNesSmbEnv {
         &mut self,
         py: Python<'py>,
         action: usize,
-    ) -> PyResult<(PyObject, f32, bool, bool, Bound<'py, PyDict>)> {
+    ) -> PyResult<SingleStepReturn<'py>> {
         let n = self.env.num_actions();
         if action >= n {
             return Err(pyo3::exceptions::PyIndexError::new_err(format!(
@@ -191,11 +194,7 @@ impl PyNesSmbEnv {
         ))
     }
 
-    fn step<'py>(
-        &mut self,
-        py: Python<'py>,
-        action: usize,
-    ) -> PyResult<(PyObject, f32, bool, bool, Bound<'py, PyDict>)> {
+    fn step<'py>(&mut self, py: Python<'py>, action: usize) -> PyResult<SingleStepReturn<'py>> {
         let n = self.env.num_actions();
         if action >= n {
             return Err(pyo3::exceptions::PyIndexError::new_err(format!(
@@ -272,7 +271,7 @@ where
     F: pyo3::marker::Ungil + Send + FnOnce() -> T,
     T: pyo3::marker::Ungil + Send,
 {
-    if release { py.allow_threads(f) } else { f() }
+    if release { py.detach(f) } else { f() }
 }
 
 fn worker_gone_error() -> pyo3::PyErr {
@@ -619,7 +618,7 @@ fn build_slot_map(workers: &[Arc<Worker>]) -> HashMap<usize, usize> {
 /// Extract a config value from a Python dict, falling back to `default` if the key
 /// is missing. A type-mismatched value is reported as a `PyTypeError` instead of
 /// being silently replaced with the default — misconfiguration should be loud.
-fn get_config_or<T: for<'py> pyo3::FromPyObject<'py>>(
+fn get_config_or<T: for<'a, 'py> pyo3::FromPyObject<'a, 'py, Error = pyo3::PyErr>>(
     config: &Bound<'_, PyDict>,
     key: &str,
     default: T,
@@ -667,8 +666,8 @@ fn write_step_outputs<'py>(
 }
 
 /// Extract a required value from a Python dict, returning `PyKeyError` if missing.
-fn get_config_required<'py, T: pyo3::FromPyObject<'py>>(
-    config: &Bound<'py, PyDict>,
+fn get_config_required<T: for<'a, 'py> pyo3::FromPyObject<'a, 'py, Error = pyo3::PyErr>>(
+    config: &Bound<'_, PyDict>,
     key: &str,
 ) -> PyResult<T> {
     config
@@ -761,7 +760,7 @@ impl PyNesVecSmbEnv {
         })
     }
 
-    fn reset<'py>(&mut self, py: Python<'py>) -> PyResult<(PyObject, PyObject)> {
+    fn reset<'py>(&mut self, py: Python<'py>) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
         use numpy::{PyArray2, PyArrayMethods};
 
         let results = maybe_allow_threads(py, self.num_envs >= 2, || self.pool.reset())?;
@@ -786,11 +785,7 @@ impl PyNesVecSmbEnv {
         Ok((obs_arr.into_any().unbind(), info_list.into_any().unbind()))
     }
 
-    fn step<'py>(
-        &mut self,
-        py: Python<'py>,
-        actions: Vec<usize>,
-    ) -> PyResult<(PyObject, PyObject, PyObject, PyObject, PyObject)> {
+    fn step<'py>(&mut self, py: Python<'py>, actions: Vec<usize>) -> PyResult<VecStepReturn> {
         use numpy::{PyArray1, PyArray2};
 
         if actions.len() != self.num_envs {
@@ -837,7 +832,7 @@ impl PyNesVecSmbEnv {
     }
 
     fn __getitem__(&self, key: &Bound<'_, pyo3::types::PyAny>) -> PyResult<Self> {
-        if let Ok(slice) = key.downcast::<pyo3::types::PySlice>() {
+        if let Ok(slice) = key.cast::<pyo3::types::PySlice>() {
             return self.get_slice(slice);
         }
         if let Ok(idx) = key.extract::<isize>() {

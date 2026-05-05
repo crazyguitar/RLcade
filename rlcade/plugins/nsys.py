@@ -33,9 +33,6 @@ class NsysPlugin(TrainerPlugin):
         self.end_step = end_step
         self._profiling = False
 
-    def on_setup(self, trainer) -> None:
-        pass
-
     def on_step_start(self, trainer, iteration: int) -> None:
         if iteration == self.start_step and not self._profiling and _cuda_available():
             logger.info("nsys: start profiling at step %d", iteration)
@@ -51,9 +48,6 @@ class NsysPlugin(TrainerPlugin):
             logger.info("nsys: stop profiling at step %d", iteration)
             torch.cuda.cudart().cudaProfilerStop()
             self._profiling = False
-
-    def on_eval(self, trainer, iteration: int, scores: list[float]) -> None:
-        pass
 
     def on_done(self, trainer) -> None:
         if self._profiling and _cuda_available():

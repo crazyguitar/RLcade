@@ -128,6 +128,76 @@ class TestRainbowDQNCheckpoint:
             env.close()
 
 
+class TestRainbowDQNSafetensors:
+    def test_save_and_load(self, rom):
+        from rlcade.envs import create_env
+        from rlcade.agent import create_agent
+        from rlcade.checkpoint.safetensors import save_safetensors, load_safetensors
+
+        args = make_args(rom, agent="rainbow_dqn", qnet="rainbow_qnet", buffer_size=1000)
+        env = create_env(args)
+        args.obs_shape = env.observation_space.shape
+        args.n_actions = env.action_space.n
+        agent = create_agent("rainbow_dqn", args, env)
+        agent.create_optimizers()
+
+        with tempfile.NamedTemporaryFile(suffix=".safetensors", delete=False) as f:
+            path = f.name
+        try:
+            state = agent.state(step=123)
+            save_safetensors(state, path, step=123)
+
+            loaded, step = load_safetensors(path, device=torch.device("cpu"))
+            assert step == 123
+            for key, value in state.items():
+                if (
+                    isinstance(value, dict)
+                    and value
+                    and all(isinstance(v, torch.Tensor) for v in value.values())
+                ):
+                    assert key in loaded, f"missing model {key} after round-trip"
+                    for k, v in value.items():
+                        assert torch.equal(loaded[key][k], v), f"weight mismatch: {key}.{k}"
+        finally:
+            os.unlink(path)
+            env.close()
+
+    def test_load_inference(self, rom):
+        from rlcade.envs import create_env
+        from rlcade.agent import create_agent, load_agent
+        from rlcade.checkpoint.safetensors import save_safetensors
+
+        args = make_args(rom, agent="rainbow_dqn", qnet="rainbow_qnet", buffer_size=1000)
+        env = create_env(args)
+        args.obs_shape = env.observation_space.shape
+        args.n_actions = env.action_space.n
+
+        with tempfile.NamedTemporaryFile(suffix=".safetensors", delete=False) as f:
+            path = f.name
+        try:
+            source = create_agent("rainbow_dqn", args, env)
+            source.create_optimizers()
+            with torch.no_grad():
+                for _, m in source._impl.models():
+                    for p in m.parameters():
+                        p.fill_(0.123)
+            save_safetensors(source.state(step=7), path, step=7)
+
+            args.checkpoint = path
+            loaded = load_agent("rainbow_dqn", args, env)
+            for _, m in loaded._impl.models():
+                for p in m.parameters():
+                    assert torch.allclose(p, torch.full_like(p, 0.123)), "weights not restored"
+
+            obs, _ = env.reset()
+            t = torch.as_tensor(obs, dtype=torch.float32)
+            action = loaded.get_action(t, deterministic=True)
+            assert 0 <= action < env.action_space.n
+        finally:
+            os.unlink(path)
+            env.close()
+
+
 class TestVecRainbowDQNAgent:
     @pytest.fixture()
     def vec_env_and_agent(self, rom):

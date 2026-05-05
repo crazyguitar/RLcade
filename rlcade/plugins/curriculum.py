@@ -10,6 +10,7 @@ import argparse
 
 from rlcade.envs import get_world_stage_pairs, _create_inprocess_vector_env
 from rlcade.logger import get_logger
+from rlcade.plugins import TrainerPlugin
 
 logger = get_logger(__name__)
 
@@ -17,7 +18,7 @@ logger = get_logger(__name__)
 ALL_STAGES = get_world_stage_pairs(None, None)
 
 
-class CurriculumPlugin:
+class CurriculumPlugin(TrainerPlugin):
     """Trainer plugin that expands the stage set when performance improves.
 
     Args:
@@ -52,9 +53,6 @@ class CurriculumPlugin:
     def on_setup(self, trainer) -> None:
         self._rebuild_env(trainer)
 
-    def on_step_start(self, trainer, iteration: int) -> None:
-        pass
-
     def on_step_end(self, trainer, iteration: int, summary: dict[str, float] | None) -> None:
         if self.current_count >= len(self.all_stages):
             return
@@ -64,12 +62,6 @@ class CurriculumPlugin:
         recent_mean = sum(scores[-self.window :]) / self.window
         if recent_mean >= self.expand_threshold:
             self._expand(trainer)
-
-    def on_eval(self, trainer, iteration: int, scores: list[float]) -> None:
-        pass
-
-    def on_done(self, trainer) -> None:
-        pass
 
     def _expand(self, trainer) -> None:
         prev = self.current_count

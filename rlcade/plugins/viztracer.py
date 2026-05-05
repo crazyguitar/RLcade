@@ -25,9 +25,6 @@ class VizTracerPlugin(TrainerPlugin):
         self.tracer = VizTracer(**kwargs)
         self.active = False
 
-    def on_setup(self, trainer) -> None:
-        pass
-
     def on_step_start(self, trainer, iteration: int) -> None:
         if iteration == self.start_step and not self.active:
             logger.info("VizTracer: start profiling at step %d", iteration)
@@ -40,9 +37,6 @@ class VizTracerPlugin(TrainerPlugin):
             self.tracer.stop()
             self.tracer.save()
             self.active = False
-
-    def on_eval(self, trainer, iteration: int, scores: list[float]) -> None:
-        pass
 
     def on_done(self, trainer) -> None:
         if self.active:

@@ -141,11 +141,7 @@ class TestSafetensors:
             loaded, step = load_safetensors(path, device=torch.device("cpu"))
             assert step == 123
             for key, value in state.items():
-                if (
-                    isinstance(value, dict)
-                    and value
-                    and all(isinstance(v, torch.Tensor) for v in value.values())
-                ):
+                if isinstance(value, dict) and value and all(isinstance(v, torch.Tensor) for v in value.values()):
                     assert key in loaded, f"missing model {key} after round-trip"
                     for k, v in value.items():
                         assert torch.equal(loaded[key][k], v), f"weight mismatch: {key}.{k}"

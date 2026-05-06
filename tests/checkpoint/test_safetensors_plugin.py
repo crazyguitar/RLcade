@@ -13,7 +13,6 @@ from rlcade.checkpoint.safetensors import load_safetensors
 from rlcade.plugins.safetensors_export import SafetensorsExportPlugin
 from tests.conftest import make_args
 
-
 # Unit tests with a fake agent — fast, no subprocess, no ROM.
 
 

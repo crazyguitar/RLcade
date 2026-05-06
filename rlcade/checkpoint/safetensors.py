@@ -84,9 +84,7 @@ def _read_metadata(blob: bytes) -> dict[str, str]:
     return header.get("__metadata__", {}) or {}
 
 
-def load_safetensors(
-    url: str, device: torch.device
-) -> tuple[dict[str, dict[str, torch.Tensor]], int]:
+def load_safetensors(url: str, device: torch.device) -> tuple[dict[str, dict[str, torch.Tensor]], int]:
     """Read safetensors from *url*, un-flatten into {model_name: state_dict}.
 
     Returns ``(state, step)``. Raises ``ValueError`` if the file's metadata
@@ -100,10 +98,7 @@ def load_safetensors(
 
     fmt = metadata.get("format")
     if fmt != _FORMAT:
-        raise ValueError(
-            f"safetensors file {url!r} has unrecognized format {fmt!r}; "
-            f"expected {_FORMAT!r}"
-        )
+        raise ValueError(f"safetensors file {url!r} has unrecognized format {fmt!r}; " f"expected {_FORMAT!r}")
     step = int(metadata.get("step", "0"))
 
     nested = _unflatten(flat)

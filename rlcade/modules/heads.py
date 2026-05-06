@@ -115,8 +115,8 @@ class DistributionalDuelingHead(nn.Module):
         hidden: int = 512,
     ):
         super().__init__()
-        self.n_actions = n_actions
-        self.num_atoms = num_atoms
+        self.n_actions = int(n_actions)
+        self.num_atoms = int(num_atoms)
         self.register_buffer("support", torch.linspace(v_min, v_max, num_atoms))
 
         self.value = nn.Sequential(
@@ -131,8 +131,9 @@ class DistributionalDuelingHead(nn.Module):
         )
 
     def _logits(self, x: torch.Tensor) -> torch.Tensor:
-        v = self.value(x).view(-1, 1, self.num_atoms)
-        a = self.advantage(x).view(-1, self.n_actions, self.num_atoms)
+        batch = x.shape[0]
+        v = self.value(x).view(batch, 1, self.num_atoms)
+        a = self.advantage(x).view(batch, self.n_actions, self.num_atoms)
         return v + a - a.mean(dim=1, keepdim=True)
 
     def forward(self, x: torch.Tensor, log: bool = False) -> torch.Tensor:

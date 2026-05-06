@@ -149,8 +149,11 @@ class Trainer(ABC, Distributed):
 
     def setup(self) -> None:
         """Called once before the training loop. Wraps agent, creates optimizers, runs plugin setup."""
-        self.agent.compile(eager=self._eager, strategy=self._distributed_strategy)
+        # Wrap with DDP/FSDP2 first so the distributed wrapper is innermost.
+        # CUDAGraphWrapper.__getattr__ then peels through torch.compile + DDP
+        # to reach the underlying module for non-forward calls (reset_noise, dist).
         self.agent = wrap_agent(self.agent, self._distributed_strategy, self.distributed)
+        self.agent.compile(eager=self._eager, strategy=self._distributed_strategy)
         self.agent.create_optimizers()
         self._start_iteration = 0
         self._notify("on_setup")

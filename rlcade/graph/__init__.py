@@ -74,9 +74,9 @@ class CUDAGraphWrapper(nn.Module):
 
         curr_stream.wait_stream(side_stream)
 
-    def forward(self, *args: torch.Tensor):
-        if self._disabled or torch.is_grad_enabled():
-            return self._module(*args)
+    def forward(self, *args: torch.Tensor, **kwargs):
+        if self._disabled or torch.is_grad_enabled() or kwargs:
+            return self._module(*args, **kwargs)
 
         if self._graph is None:
             in_shapes = [tuple(a.shape) for a in args]
@@ -116,3 +116,20 @@ class CUDAGraphWrapper(nn.Module):
     def module(self) -> nn.Module:
         """Return the underlying module."""
         return self._module
+
+    def __getattr__(self, name: str):
+        try:
+            return super().__getattr__(name)
+        except AttributeError:
+            pass
+        # Peel through torch.compile (`_orig_mod`) and DDP (`.module`) wrappers
+        # to find `name` on the underlying module. DDP does not forward
+        # attribute access; OptimizedModule does.
+        m = super().__getattr__("_module")
+        while m is not None:
+            try:
+                return getattr(m, name)
+            except AttributeError:
+                inner = getattr(m, "_orig_mod", None) or getattr(m, "module", None)
+                m = inner if isinstance(inner, nn.Module) and inner is not m else None
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute {name!r}")

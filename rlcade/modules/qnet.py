@@ -51,7 +51,6 @@ class RainbowQNet(nn.Module):
             v_max=v_max,
             noise_std=noise_std,
         )
-        self.support = self.head.support
 
         # Xavier init for CNN only — NoisyLinear has its own init
         for m in self.encoder.modules():
@@ -59,6 +58,10 @@ class RainbowQNet(nn.Module):
                 nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
+
+    @property
+    def support(self) -> torch.Tensor:
+        return self.head.support
 
     def forward(self, x: torch.Tensor, log: bool = False) -> torch.Tensor:
         return self.head(self.encoder(x), log=log)

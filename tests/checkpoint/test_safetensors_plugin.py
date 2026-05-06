@@ -1,15 +1,108 @@
-"""SafetensorsExportPlugin -- real trainer integration. No fakes, no mocks."""
+"""SafetensorsExportPlugin -- unit tests + real trainer integration."""
 
 from __future__ import annotations
 
 import os
 import socket
 
+import pytest
 import torch
 import torch.multiprocessing as mp
 
 from rlcade.checkpoint.safetensors import load_safetensors
+from rlcade.plugins.safetensors_export import SafetensorsExportPlugin
 from tests.conftest import make_args
+
+
+# Unit tests with a fake agent — fast, no subprocess, no ROM.
+
+
+class _FakeAgent:
+    """Minimal agent-like object whose state() returns a dict-of-tensor-dicts."""
+
+    device = torch.device("cpu")
+
+    def __init__(self):
+        self.state_calls: list[int] = []
+
+    def state(self, step: int = 0) -> dict:
+        self.state_calls.append(step)
+        return {
+            "step": step,
+            "actor": {"w": torch.randn(2, 2), "b": torch.randn(2)},
+            "critic": {"w": torch.randn(1, 2)},
+        }
+
+
+class _FakeMetrics:
+    def __init__(self, total_steps: int = 0):
+        self.total_steps = total_steps
+
+
+class _FakeTrainer:
+    def __init__(self, agent: _FakeAgent, total_steps: int = 0):
+        self.agent = agent
+        self.metrics = _FakeMetrics(total_steps)
+        self.rank0 = True
+        self.distributed = False
+
+
+class TestSafetensorsExportPluginUnit:
+    def test_on_done_writes_file_with_step(self, tmp_path):
+        path = str(tmp_path / "model.safetensors")
+        agent = _FakeAgent()
+        trainer = _FakeTrainer(agent, total_steps=300)
+        plugin = SafetensorsExportPlugin(safetensors_path=path)
+
+        plugin.on_done(trainer)
+
+        assert os.path.exists(path)
+        loaded, step = load_safetensors(path, device=torch.device("cpu"))
+        assert step == 300
+        assert {"actor", "critic"} <= set(loaded.keys())
+        assert agent.state_calls == [300]
+
+    def test_empty_path_skips_state_call(self):
+        agent = _FakeAgent()
+        trainer = _FakeTrainer(agent, total_steps=300)
+        plugin = SafetensorsExportPlugin(safetensors_path="")
+
+        plugin.on_done(trainer)
+
+        # No path means no work — state() must not even be called.
+        assert agent.state_calls == []
+
+    def test_save_failure_raises_runtime_error(self, tmp_path, monkeypatch):
+        path = str(tmp_path / "model.safetensors")
+        agent = _FakeAgent()
+        trainer = _FakeTrainer(agent, total_steps=42)
+        plugin = SafetensorsExportPlugin(safetensors_path=path)
+
+        from rlcade.plugins import safetensors_export
+
+        def boom(state, url, *, step=0):
+            raise OSError("disk full")
+
+        monkeypatch.setattr(safetensors_export, "save_safetensors", boom)
+
+        with pytest.raises(RuntimeError, match="Safetensors export failed at step 42"):
+            plugin.on_done(trainer)
+
+    def test_writes_at_step_zero(self, tmp_path):
+        """on_done should still write even if the trainer never advanced."""
+        path = str(tmp_path / "model.safetensors")
+        agent = _FakeAgent()
+        trainer = _FakeTrainer(agent, total_steps=0)
+        plugin = SafetensorsExportPlugin(safetensors_path=path)
+
+        plugin.on_done(trainer)
+
+        loaded, step = load_safetensors(path, device=torch.device("cpu"))
+        assert step == 0
+        assert "actor" in loaded
+
+
+# End-to-end PPO training tests (real trainer + mp.spawn).
 
 
 def _free_port():

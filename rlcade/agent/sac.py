@@ -388,7 +388,6 @@ def _create_sac(config: SACConfig, env=None):
     num_envs = env.num_envs if env is not None and is_vector_env(env) else 1
     config = replace(
         config,
-        learn_start=config.learn_start * num_envs,
         learn_freq=config.learn_freq * num_envs,
     )
 

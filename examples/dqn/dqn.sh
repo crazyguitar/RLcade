@@ -57,7 +57,7 @@ if $TRAIN; then
     --epsilon-end 0.01 \
     --epsilon-decay 500000 \
     --batch-size 64 \
-    --buffer-size 500000 \
+    --buffer-size 100000 \
     --learn-start 10000 \
     --learn-freq 4 \
     --double \

@@ -282,12 +282,10 @@ class VecDQN(VecAgentMixin, DQNBase):
 
 
 def _create_dqn(config: DQNConfig, env=None):
-    # Scale by num_envs since step_count/buffer grow by num_envs per trainer step
     num_envs = env.num_envs if env is not None and is_vector_env(env) else 1
     config = replace(
         config,
         epsilon_decay=config.epsilon_decay * num_envs,
-        learn_start=config.learn_start * num_envs,
         learn_freq=config.learn_freq * num_envs,
     )
 
@@ -718,7 +716,6 @@ def _create_rainbow_dqn(config: RainbowDQNConfig, env=None):
     num_envs = env.num_envs if env is not None and is_vector_env(env) else 1
     config = replace(
         config,
-        learn_start=config.learn_start * num_envs,
         learn_freq=config.learn_freq * num_envs,
     )
 

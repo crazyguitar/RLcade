@@ -21,11 +21,7 @@ def create_agent(name: str, args, env=None):
 
 
 def load_agent(name: str, args, env=None):
-    """Load a trained agent for inference. Dispatches on extension.
-
-    ``.safetensors`` -> model-weights-only load. Anything else -> ``.pt`` resume
-    path via ``cls.restore``.
-    """
+    """Load a trained agent for inference. Dispatches on extension."""
     cls, config_cls = _AGENTS[name]
     config = config_cls.from_args(args)
     url = args.checkpoint

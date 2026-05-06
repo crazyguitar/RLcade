@@ -344,7 +344,10 @@ class TestLocalDDPAsyncCompat:
 # Tests: FSDP2 ↔ everything (async save)
 
 
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="FSDP2 requires CUDA")
+@pytest.mark.skipif(
+    not torch.cuda.is_available() or torch.cuda.device_count() < 2,
+    reason="FSDP2 requires at least 2 CUDA devices",
+)
 class TestFSDP2AsyncCompat:
     """Async checkpoint compatibility involving FSDP2 (CUDA only)."""
 

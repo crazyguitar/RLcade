@@ -470,6 +470,8 @@ class TestFSDP2Checkpoint:
     def _skip_no_cuda(self):
         if not torch.cuda.is_available():
             pytest.skip("FSDP2 requires CUDA")
+        if torch.cuda.device_count() < 2:
+            pytest.skip("FSDP2 requires at least 2 CUDA devices")
 
     def test_state_roundtrip(self, rom):
         port = _free_port()

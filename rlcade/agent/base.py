@@ -124,7 +124,7 @@ class VecAgentMixin:
             obs, rewards, terminated, truncated, _ = env.step(actions)
             dones = terminated | truncated
             for i in range(env.num_envs):
-                totals[i] += rewards[i]
+                totals[i] += float(rewards[i])
                 if dones[i]:
                     scores.append(totals[i])
                     totals[i] = 0.0

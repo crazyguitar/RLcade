@@ -68,6 +68,7 @@ if $TRAIN; then
     --checkpoint-interval 100 \
     --checkpoint-path checkpoints/ppo_lstm_icm_smb.pt \
     --safetensors-path checkpoints/ppo_lstm_icm_smb.safetensors \
+    --async-checkpoint \
     --eval-interval 100 \
     --eval-episodes 5 \
     --tensorboard tensorboard/ppo_lstm_icm_smb \

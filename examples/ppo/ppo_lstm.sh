@@ -66,6 +66,7 @@ if $TRAIN; then
     --checkpoint-interval "${CHECKPOINT_INTERVAL:-100}" \
     --checkpoint-path "${CHECKPOINT:-checkpoints/ppo_lstm_smb.pt}" \
     --safetensors-path "${SAFETENSORS:-checkpoints/ppo_lstm_smb.safetensors}" \
+    --async-checkpoint \
     --eval-interval "${EVAL_INTERVAL:-100}" \
     --eval-episodes "${EVAL_EPISODES:-5}" \
     --tensorboard "${TB_LOG:-tensorboard/ppo_lstm_smb}" \

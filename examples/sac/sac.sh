@@ -72,6 +72,7 @@ if $TRAIN; then
     --checkpoint-interval 10000 \
     --checkpoint-path checkpoints/sac_smb.pt \
     --safetensors-path checkpoints/sac_smb.safetensors \
+    --async-checkpoint \
     --eval-interval 10000 \
     --eval-episodes 5 \
     --log-interval 1000 \

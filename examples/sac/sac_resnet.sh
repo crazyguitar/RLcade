@@ -75,6 +75,7 @@ if $TRAIN; then
     --checkpoint-interval "${CHECKPOINT_INTERVAL:-10000}" \
     --checkpoint-path "${CHECKPOINT:-checkpoints/sac_resnet_smb.pt}" \
     --safetensors-path "${SAFETENSORS:-checkpoints/sac_resnet_smb.safetensors}" \
+    --async-checkpoint \
     --eval-interval "${EVAL_INTERVAL:-10000}" \
     --eval-episodes "${EVAL_EPISODES:-5}" \
     --log-interval "${LOG_INTERVAL:-1000}" \

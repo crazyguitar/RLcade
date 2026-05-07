@@ -16,6 +16,7 @@ import torch.distributed as dist
 
 from rlcade.checkpoint.checkpoint import Checkpoint
 from rlcade.logger import get_logger, get_log0
+from rlcade.plugins import TrainerPlugin
 
 logger = get_logger(__name__)
 log0 = get_log0(__name__)
@@ -70,7 +71,7 @@ def _join_and_sync(trainer, future: Future | None) -> bool:
     return all_ok
 
 
-class AsyncCheckpointPlugin:
+class AsyncCheckpointPlugin(TrainerPlugin):
     """Trainer plugin that saves checkpoints on a background thread."""
 
     def __init__(
@@ -129,15 +130,9 @@ class AsyncCheckpointPlugin:
         self._last_saved_step = step
         log0.info("Checkpoint save submitted (step %d)", step)
 
-    def on_step_start(self, trainer, iteration: int) -> None:
-        pass
-
     def on_step_end(self, trainer, iteration: int, summary: dict[str, float] | None) -> None:
         if self.checkpoint_interval and iteration > 0 and iteration % self.checkpoint_interval == 0:
             self._save(trainer)
-
-    def on_eval(self, trainer, iteration: int, scores: list[float]) -> None:
-        pass
 
     def on_done(self, trainer) -> None:
         if self._checkpoint is None:

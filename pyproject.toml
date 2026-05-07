@@ -16,6 +16,7 @@ rlcade = [
     "tqdm>=4.60",
     "tensorboard>=2.14",
     "viztracer>=0.16",
+    "safetensors>=0.4",
 ]
 notebook = [
     "ipython>=8.0",

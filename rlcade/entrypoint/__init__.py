@@ -24,6 +24,11 @@ def _build_plugins(args):
         )
     )
 
+    if getattr(args, "safetensors_path", ""):
+        from rlcade.plugins.safetensors_export import SafetensorsExportPlugin
+
+        plugins.append(SafetensorsExportPlugin(safetensors_path=args.safetensors_path))
+
     if args.tensorboard:
         from rlcade.plugins.tensorboard import TensorBoardPlugin
 

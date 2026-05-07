@@ -44,9 +44,6 @@ class MemoryProfilerPlugin(TrainerPlugin):
         torch.cuda.memory._record_memory_history(enabled=None)
         self._recording = False
 
-    def on_setup(self, trainer) -> None:
-        pass
-
     def on_step_start(self, trainer, iteration: int) -> None:
         if iteration == self.start_step and not self._recording and _cuda_available():
             self._start_recording(iteration)
@@ -55,9 +52,6 @@ class MemoryProfilerPlugin(TrainerPlugin):
         if self._recording and iteration >= self.end_step:
             logger.info("memory_profiler: stop recording at step %d", iteration)
             self._stop_recording()
-
-    def on_eval(self, trainer, iteration: int, scores: list[float]) -> None:
-        pass
 
     def on_done(self, trainer) -> None:
         if self._recording and _cuda_available():

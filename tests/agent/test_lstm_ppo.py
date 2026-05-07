@@ -97,6 +97,71 @@ class TestLstmPPOCheckpoint:
             env.close()
 
 
+class TestLstmPPOSafetensors:
+    def test_save_and_load(self, rom):
+        from rlcade.envs import create_env
+        from rlcade.agent import create_agent
+        from rlcade.checkpoint.safetensors import save_safetensors, load_safetensors
+
+        args = _lstm_args(rom)
+        env = create_env(args)
+        args.obs_shape = env.observation_space.shape
+        args.n_actions = env.action_space.n
+        agent = create_agent("lstm_ppo", args, env)
+        agent.create_optimizers()
+
+        with tempfile.NamedTemporaryFile(suffix=".safetensors", delete=False) as f:
+            path = f.name
+        try:
+            state = agent.state(step=123)
+            save_safetensors(state, path, step=123)
+
+            loaded, step = load_safetensors(path, device=torch.device("cpu"))
+            assert step == 123
+            assert loaded, "no models saved"
+            for name, sub in loaded.items():
+                for k, v in sub.items():
+                    assert torch.equal(state[name][k], v), f"weight mismatch: {name}.{k}"
+        finally:
+            os.unlink(path)
+            env.close()
+
+    def test_load_inference(self, rom):
+        from rlcade.envs import create_env
+        from rlcade.agent import create_agent, load_agent
+        from rlcade.checkpoint.safetensors import save_safetensors
+
+        args = _lstm_args(rom)
+        env = create_env(args)
+        args.obs_shape = env.observation_space.shape
+        args.n_actions = env.action_space.n
+
+        with tempfile.NamedTemporaryFile(suffix=".safetensors", delete=False) as f:
+            path = f.name
+        try:
+            source = create_agent("lstm_ppo", args, env)
+            source.create_optimizers()
+            with torch.no_grad():
+                for _, m in source._impl.models():
+                    for p in m.parameters():
+                        p.fill_(0.123)
+            save_safetensors(source.state(step=7), path, step=7)
+
+            args.checkpoint = path
+            loaded = load_agent("lstm_ppo", args, env)
+            for _, m in loaded._impl.models():
+                for p in m.parameters():
+                    assert torch.allclose(p, torch.full_like(p, 0.123)), "weights not restored"
+
+            obs, _ = env.reset()
+            t = torch.as_tensor(obs, dtype=torch.float32)
+            action, _, _ = loaded.get_action(t)
+            assert 0 <= action.item() < env.action_space.n
+        finally:
+            os.unlink(path)
+            env.close()
+
+
 class TestLstmVecPPOAgent:
     @pytest.fixture()
     def vec_env_and_agent(self, rom):

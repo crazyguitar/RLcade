@@ -24,12 +24,6 @@ class TensorBoardPlugin(TrainerPlugin):
     def __init__(self, log_dir: str = "runs"):
         self.writer = SummaryWriter(log_dir)
 
-    def on_setup(self, trainer) -> None:
-        pass
-
-    def on_step_start(self, trainer, iteration: int) -> None:
-        pass
-
     def on_step_end(self, trainer, iteration: int, summary: dict[str, float] | None) -> None:
         if not summary:
             return

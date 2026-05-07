@@ -148,11 +148,10 @@ class TestDQNSafetensors:
 
             loaded, step = load_safetensors(path, device=torch.device("cpu"))
             assert step == 123
-            for key, value in state.items():
-                if isinstance(value, dict) and value and all(isinstance(v, torch.Tensor) for v in value.values()):
-                    assert key in loaded, f"missing model {key} after round-trip"
-                    for k, v in value.items():
-                        assert torch.equal(loaded[key][k], v), f"weight mismatch: {key}.{k}"
+            assert loaded, "no models saved"
+            for name, sub in loaded.items():
+                for k, v in sub.items():
+                    assert torch.equal(state[name][k], v), f"weight mismatch: {name}.{k}"
         finally:
             os.unlink(path)
             env.close()

@@ -127,6 +127,7 @@ class Trainer(ABC, Distributed):
         logger.info("Trainer config: %s", self.config)
         self.setup()
         pbar = ProgressBar(self.max_iterations, initial=self.start_iteration, disable=not self.rank0)
+        last_logged = self.start_iteration
 
         try:
             for iteration in range(self.start_iteration + 1, self.max_iterations + 1):
@@ -137,7 +138,8 @@ class Trainer(ABC, Distributed):
                 self._notify("on_step_end", iteration, summary)
 
                 if summary:
-                    pbar.update(summary)
+                    pbar.update(summary, n=iteration - last_logged)
+                    last_logged = iteration
                 self.maybe_evaluate(iteration)
                 if self.done:
                     break

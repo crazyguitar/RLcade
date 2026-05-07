@@ -106,6 +106,8 @@ def make_off_policy_trainer(rom, agent_name, *, vec=False, learn_start=16, eval_
         log_interval=25,
         eval_interval=eval_interval,
         eval_episodes=1,
+        learn_start=learn_start,
+        learn_freq=1,
     )
     extra_defaults.update(extra)
 
@@ -116,7 +118,7 @@ def make_off_policy_trainer(rom, agent_name, *, vec=False, learn_start=16, eval_
 
     trainer = create_trainer(agent_name, args)
 
-    # Lower learn_start for fast tests
+    # Mirror learn_start onto the agent for tests that inspect agent.can_learn().
     inner_name = {"rainbow_dqn": "rainbow"}.get(agent_name, agent_name)
     inner = getattr(trainer.agent, inner_name)
     inner.learn_start = learn_start

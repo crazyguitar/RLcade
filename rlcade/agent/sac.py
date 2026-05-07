@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import argparse
 from abc import abstractmethod
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -385,12 +385,6 @@ class VecSAC(VecAgentMixin, SACBase):
 
 
 def _create_sac(config: SACConfig, env=None):
-    num_envs = env.num_envs if env is not None and is_vector_env(env) else 1
-    config = replace(
-        config,
-        learn_freq=config.learn_freq * num_envs,
-    )
-
     if env is None or is_vector_env(env):
         return VecSAC(config)
     return EnvSAC(config)

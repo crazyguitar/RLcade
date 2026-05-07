@@ -61,9 +61,9 @@ if $TRAIN; then
     --tau "${TAU:-1e-3}" \
     --epsilon-start "${EPSILON_START:-1.0}" \
     --epsilon-end "${EPSILON_END:-0.01}" \
-    --epsilon-decay "${EPSILON_DECAY:-500000}" \
+    --epsilon-decay "${EPSILON_DECAY:-50000000}" \
     --batch-size "${BATCH_SIZE:-64}" \
-    --buffer-size "${BUFFER_SIZE:-500000}" \
+    --buffer-size "${BUFFER_SIZE:-100000}" \
     --learn-start "${LEARN_START:-10000}" \
     --learn-freq "${LEARN_FREQ:-4}" \
     --double \

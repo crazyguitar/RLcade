@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 from abc import abstractmethod
 from collections import deque
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -282,13 +282,6 @@ class VecDQN(VecAgentMixin, DQNBase):
 
 
 def _create_dqn(config: DQNConfig, env=None):
-    num_envs = env.num_envs if env is not None and is_vector_env(env) else 1
-    config = replace(
-        config,
-        epsilon_decay=config.epsilon_decay * num_envs,
-        learn_freq=config.learn_freq * num_envs,
-    )
-
     if env is None or is_vector_env(env):
         return VecDQN(config)
     return EnvDQN(config)
@@ -714,11 +707,6 @@ class VecRainbowDQN(VecAgentMixin, RainbowDQNBase):
 
 def _create_rainbow_dqn(config: RainbowDQNConfig, env=None):
     num_envs = env.num_envs if env is not None and is_vector_env(env) else 1
-    config = replace(
-        config,
-        learn_freq=config.learn_freq * num_envs,
-    )
-
     if env is None or is_vector_env(env):
         return VecRainbowDQN(config, num_envs)
     return EnvRainbowDQN(config)

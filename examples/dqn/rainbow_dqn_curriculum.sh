@@ -55,7 +55,7 @@ if $TRAIN; then
     --gamma 0.99 \
     --tau 1e-3 \
     --batch-size 64 \
-    --buffer-size 500000 \
+    --buffer-size 100000 \
     --learn-start 10000 \
     --learn-freq 4 \
     --alpha 0.6 \

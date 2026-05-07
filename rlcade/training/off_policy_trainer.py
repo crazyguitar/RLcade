@@ -31,6 +31,13 @@ class OffPolicyTrainer(Trainer):
         # agent owns its own PinMemory instead.
         self._pin_memory_enabled = getattr(args, "pin_memory", True)
         self._pin_memory = PinMemory(enabled=self._pin_memory_enabled)
+        # Trainer drives the learn cadence: warmup the buffer to learn_start
+        # transitions before the loop starts, then each iter collects
+        # learn_freq * num_envs transitions and runs exactly one gradient step.
+        # learn_start is floored at batch_size so the first sample() succeeds.
+        batch_size = getattr(args, "batch_size", 1)
+        self.learn_start = max(getattr(args, "learn_start", 0), batch_size)
+        self.learn_freq = max(1, getattr(args, "learn_freq", 1))
 
     @property
     def config(self) -> dict:
@@ -52,8 +59,21 @@ class OffPolicyTrainer(Trainer):
         super().setup()
         self.obs, _ = self.env.reset()
         self.t0 = time.time()
+        self._warmup_buffer()
 
-    def step(self, iteration: int) -> None:
+    def _warmup_buffer(self) -> None:
+        """Pre-fill the replay buffer to ``learn_start`` transitions before training."""
+        if self.learn_start <= 0:
+            return
+        logger.info("Warmup: collecting %d transitions to fill replay buffer", self.learn_start)
+        collected = 0
+        while collected < self.learn_start:
+            self._collect_one()
+            collected += self.num_envs
+        logger.info("Warmup done: collected %d transitions", collected)
+
+    def _collect_one(self) -> None:
+        """Collect ``num_envs`` transitions and store them in the replay buffer."""
         actions = self.agent.get_action(self._pin_memory.to(self.obs, self.agent.device))
         next_obs, rewards, terminated, truncated, _ = self.env.step(actions)
         dones = np.atleast_1d(np.asarray(terminated) | np.asarray(truncated))
@@ -61,9 +81,16 @@ class OffPolicyTrainer(Trainer):
         self.agent.store(self.obs, actions, rewards, next_obs, dones)
         self._record_episodes(rewards, dones)
         self.obs = self._maybe_reset(next_obs, dones)
-        self._maybe_learn()
-
         self.metrics.advance(self.num_envs)
+
+    def step(self, iteration: int) -> None:
+        for _ in range(self.learn_freq):
+            self._collect_one()
+
+        learn_metrics = self.agent.learn()
+        self.metrics.record_loss(learn_metrics[self._loss_key])
+        self.metrics.extras.update(learn_metrics)
+
         elapsed = time.time() - self.t0
         self.metrics.sps = self.metrics.total_steps / max(elapsed, 1e-12)
         self.metrics.extras["steps"] = self.metrics.total_steps
@@ -73,13 +100,6 @@ class OffPolicyTrainer(Trainer):
         if self.num_envs == 1 and dones.any():
             next_obs, _ = self.env.reset()
         return next_obs
-
-    def _maybe_learn(self) -> None:
-        if not self.agent.can_learn():
-            return
-        learn_metrics = self.agent.learn()
-        self.metrics.record_loss(learn_metrics[self._loss_key])
-        self.metrics.extras.update(learn_metrics)
 
     def _record_episodes(self, rewards, dones):
         self.episode_rewards += np.atleast_1d(rewards)

@@ -10,11 +10,11 @@ class ProgressBar:
         self.pbar = tqdm(total=total, initial=initial, desc="Training", unit="iter", disable=disable)
         self.metrics: dict[str, float] = {}
 
-    def update(self, metrics: dict[str, float]):
-        """Advance one step and update displayed metrics."""
+    def update(self, metrics: dict[str, float], n: int = 1):
+        """Advance ``n`` iterations and update displayed metrics."""
         self.metrics.update(metrics)
         self.pbar.set_postfix({k: f"{v:.4g}" for k, v in self.metrics.items()})
-        self.pbar.update(1)
+        self.pbar.update(n)
 
     def close(self):
         self.pbar.close()

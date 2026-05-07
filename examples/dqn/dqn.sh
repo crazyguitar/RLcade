@@ -55,7 +55,7 @@ if $TRAIN; then
     --tau 1e-3 \
     --epsilon-start 1.0 \
     --epsilon-end 0.01 \
-    --epsilon-decay 500000 \
+    --epsilon-decay 50000000 \
     --batch-size 64 \
     --buffer-size 100000 \
     --learn-start 10000 \

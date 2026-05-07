@@ -65,6 +65,7 @@ if $TRAIN; then
     --max-iterations 1000000 \
     --checkpoint-interval 10000 \
     --checkpoint-path checkpoints/dqn_curriculum_smb.pt \
+    --safetensors-path checkpoints/dqn_curriculum_smb.safetensors \
     --eval-interval 10000 \
     --eval-episodes 5 \
     --log-interval 1000 \

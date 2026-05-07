@@ -6,7 +6,7 @@ def add_training_args(parser):
     parser.add_argument("--checkpoint-interval", type=int, default=100, help="Save checkpoint every N iterations")
     parser.add_argument("--checkpoint-path", type=str, default="ppo_smb.pt", help="Checkpoint file path")
     parser.add_argument("--async-checkpoint", action="store_true", help="Offload checkpoint writes to a background thread")
-    parser.add_argument("--safetensors-path", type=str, default="ppo_smb.safetensors", help="Safetensors export file path (written once at training end; empty to disable)")
+    parser.add_argument("--safetensors-path", type=str, default="", help="Safetensors export file path (written once at training end; empty to disable)")
     parser.add_argument("--target-score", type=float, default=None, help="Early stop target score")
     parser.add_argument("--eval-interval", type=int, default=500, help="Evaluate every N iterations (0 to disable)")
     parser.add_argument("--eval-episodes", type=int, default=5, help="Episodes per evaluation")

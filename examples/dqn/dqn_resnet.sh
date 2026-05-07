@@ -71,6 +71,7 @@ if $TRAIN; then
     --max-iterations "${MAX_ITERATIONS:-1000000}" \
     --checkpoint-interval "${CHECKPOINT_INTERVAL:-10000}" \
     --checkpoint-path "${CHECKPOINT:-checkpoints/dqn_resnet_smb.pt}" \
+    --safetensors-path "${SAFETENSORS:-checkpoints/dqn_resnet_smb.safetensors}" \
     --eval-interval "${EVAL_INTERVAL:-10000}" \
     --eval-episodes "${EVAL_EPISODES:-5}" \
     --log-interval "${LOG_INTERVAL:-1000}" \

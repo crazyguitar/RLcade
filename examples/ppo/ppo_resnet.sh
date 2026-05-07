@@ -76,6 +76,7 @@ if $TRAIN; then
     --max-iterations "${MAX_ITERATIONS:-10000}" \
     --checkpoint-interval "${CHECKPOINT_INTERVAL:-100}" \
     --checkpoint-path "${CHECKPOINT:-checkpoints/ppo_resnet_smb.pt}" \
+    --safetensors-path "${SAFETENSORS:-checkpoints/ppo_resnet_smb.safetensors}" \
     --eval-interval "${EVAL_INTERVAL:-100}" \
     --eval-episodes "${EVAL_EPISODES:-5}" \
     --tensorboard "${TB_LOG:-tensorboard/ppo_resnet_smb}" \

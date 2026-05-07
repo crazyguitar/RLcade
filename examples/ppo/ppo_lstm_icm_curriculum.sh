@@ -67,6 +67,7 @@ if $TRAIN; then
     --max-iterations 10000 \
     --checkpoint-interval 100 \
     --checkpoint-path checkpoints/ppo_lstm_icm_curriculum_smb.pt \
+    --safetensors-path checkpoints/ppo_lstm_icm_curriculum_smb.safetensors \
     --eval-interval 100 \
     --eval-episodes 5 \
     --curriculum \

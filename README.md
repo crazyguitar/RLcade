@@ -17,7 +17,8 @@ A PyTorch-based reinforcement learning framework for playing games. RLcade provi
 - **Profiling**: [VizTracer](rlcade/plugins/viztracer.py), [Nsight Systems](rlcade/plugins/nsys.py), and [CUDA Memory Profiler](rlcade/plugins/memory_profiler.py) integration
 - **Checkpointing**:
   - Local and [S3](rlcade/checkpoint/s3.py) filesystem backends
-  - [Async writes](rlcade/plugins/async_checkpoint.py) (`--async-checkpoint`) — ThreadPoolExecutor-backed, non-blocking periodic saves using PyTorch's [StateDictStager](https://github.com/pytorch/pytorch/blob/main/torch/distributed/checkpoint/_state_dict_stager.py) for CPU offload
+  - [Async writes](rlcade/plugins/async_checkpoint.py) (`--async-checkpoint`) — non-blocking periodic saves with CPU offload
+  - [Safetensors](rlcade/plugins/safetensors_export.py) export and load (`--safetensors-path`)
   - Cross-strategy compatible — local/DDP/FSDP2 checkpoints are interchangeable
 - **NES Emulator**: Rust core with [PyO3 bindings](crates/), supporting 5 mappers (NROM, MMC1, UxROM, CNROM, MMC3)
 - **WASM Support**: [wasm-bindgen bindings](crates/rlcade/src/wasm.rs) for running the NES emulator and SMB environment in browsers and Jupyter notebooks

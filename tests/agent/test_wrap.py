@@ -1,9 +1,15 @@
 """Tests for agent.wrap() distributed model wrapping."""
 
+import os
+import socket
+
+import pytest
 import torch
+import torch.distributed as dist
 import torch.nn as nn
 
-from rlcade.agent.base import Agent, AgentWrapper, wrap_agent
+from rlcade.agent.base import Agent, AgentWrapper, strip_wrapper_prefixes, unwrap_module, wrap_agent
+from rlcade.graph import CUDAGraphWrapper
 from tests.conftest import make_args
 
 
@@ -315,3 +321,133 @@ class TestLoadNonModelState:
         for k, v in agent._impl.actor.state_dict().items():
             assert torch.equal(v, actor_before[k])
         env.close()
+
+
+class _Tiny(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encoder = nn.Sequential(nn.Linear(4, 4), nn.ReLU(), nn.Linear(4, 4))
+
+
+def _init_single_rank_gloo():
+    """Init a world_size=1 gloo group so DistributedDataParallel can wrap on CPU."""
+    if dist.is_initialized():
+        return False
+    with socket.socket() as s:
+        s.bind(("", 0))
+        port = s.getsockname()[1]
+    os.environ.update({"MASTER_ADDR": "localhost", "MASTER_PORT": str(port), "RANK": "0", "WORLD_SIZE": "1"})
+    dist.init_process_group("gloo")
+    return True
+
+
+class TestUnwrapModule:
+    """unwrap_module peels CUDAGraphWrapper / torch.compile / DDP layers."""
+
+    def test_bare_module_returns_self(self):
+        m = _Tiny()
+        assert unwrap_module(m) is m
+
+    def test_unwraps_cuda_graph_wrapper(self):
+        m = _Tiny()
+        assert unwrap_module(CUDAGraphWrapper(m)) is m
+
+    def test_unwraps_torch_compile(self):
+        m = _Tiny()
+        assert unwrap_module(torch.compile(m)) is m
+
+    def test_unwraps_full_chain_with_ddp(self):
+        """Reproduces the resume-train path: CUDAGraphWrapper(compile(DDP(qnet)))."""
+        from torch.nn.parallel import DistributedDataParallel as DDP
+
+        owns_pg = _init_single_rank_gloo()
+        try:
+            m = _Tiny()
+            chain = CUDAGraphWrapper(torch.compile(DDP(m)))
+            assert unwrap_module(chain) is m
+        finally:
+            if owns_pg:
+                dist.destroy_process_group()
+
+
+class TestDDPWrapperLoadFullChain:
+    """Regression: DDPAgentWrapper must load checkpoints saved with full wrap chain.
+
+    Before the fix, ``_unwrapped`` only peeled one layer (CUDAGraphWrapper),
+    leaving ``OptimizedModule(DDP(qnet))`` whose ``state_dict`` keeps the
+    ``_orig_mod.module.`` prefix. ``strip_wrapper_prefixes`` would then strip
+    the prefix off saved keys, producing a missing-keys error on load.
+    """
+
+    @pytest.mark.skipif(dist.is_initialized(), reason="needs to control its own pg")
+    def test_load_after_compile_and_ddp_wrap(self):
+        from torch.nn.parallel import DistributedDataParallel as DDP
+
+        owns_pg = _init_single_rank_gloo()
+        try:
+            bare = _Tiny()
+            saved = {f"_orig_mod.module.{k}": v.clone() for k, v in bare.state_dict().items()}
+
+            target = _Tiny()
+            wrapped = CUDAGraphWrapper(torch.compile(DDP(target)))
+            unwrap_module(wrapped).load_state_dict(strip_wrapper_prefixes(saved))
+
+            for k, v in bare.state_dict().items():
+                assert torch.equal(target.state_dict()[k], v)
+        finally:
+            if owns_pg:
+                dist.destroy_process_group()
+
+    def test_unwrapped_covers_target_networks(self):
+        """DDPAgentWrapper._unwrapped() must also unwrap target_models().
+
+        Target nets aren't DDP-wrapped but compile() still puts them under
+        CUDAGraphWrapper(torch.compile(...)). Skipping them leaves saved
+        target keys mismatching after strip_wrapper_prefixes.
+        """
+        from rlcade.agent.base import Agent, DDPAgentWrapper
+
+        bare_q = _Tiny()
+        bare_t = _Tiny()
+
+        class Impl(nn.Module):
+            device = torch.device("cpu")
+
+            def __init__(self):
+                super().__init__()
+                self.qnet = bare_q
+                self.target = bare_t
+
+            def models(self):
+                return [("qnet", self.qnet)]
+
+            def target_models(self):
+                return [("target", self.target)]
+
+            def state(self, step=0, *, staging=False):
+                return {"qnet": self.qnet.state_dict(), "target": self.target.state_dict(), "step": step}
+
+            def load(self, f):
+                return 0
+
+            def get_action(self, obs, *, deterministic=False):
+                return 0
+
+        impl = Impl()
+        agent = Agent(impl)
+        # Skip __init__ (would require process group); construct shell and seat _agent.
+        wrapper = DDPAgentWrapper.__new__(DDPAgentWrapper)
+        wrapper._agent = agent
+
+        # Apply CUDAGraphWrapper(torch.compile(...)) to both qnet and target,
+        # mirroring agent.compile() but without CUDA/DDP requirements.
+        impl.qnet = CUDAGraphWrapper(torch.compile(bare_q))
+        impl.target = CUDAGraphWrapper(torch.compile(bare_t))
+
+        with wrapper._unwrapped():
+            assert impl.qnet is bare_q
+            assert impl.target is bare_t
+
+        # Restoration after exit
+        assert isinstance(impl.qnet, CUDAGraphWrapper)
+        assert isinstance(impl.target, CUDAGraphWrapper)

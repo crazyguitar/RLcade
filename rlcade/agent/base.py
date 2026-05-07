@@ -19,12 +19,41 @@ def strip_wrapper_prefixes(sd: dict) -> dict:
         while isinstance(k, str):
             for p in prefixes:
                 if k.startswith(p):
-                    k = k[len(p):]
+                    k = k[len(p) :]
                     break
             else:
                 break
         out[k] = v
     return out
+
+
+def unwrap_module(module: nn.Module) -> nn.Module:
+    """Peel CUDAGraphWrapper, torch.compile (OptimizedModule), and DDP layers
+    to reach the underlying nn.Module. Parameter tensors are shared, so an
+    optimizer built on the wrapped module sees the same params on the bare
+    module.
+    """
+    from torch.nn.parallel import DistributedDataParallel
+
+    seen: set[int] = set()
+    while id(module) not in seen:
+        seen.add(id(module))
+        # CUDAGraphWrapper stores its inner module on `_module`. Import lazily
+        # so this helper works in environments where rlcade.graph is unused.
+        from rlcade.graph import CUDAGraphWrapper
+
+        if isinstance(module, CUDAGraphWrapper):
+            module = module._module
+            continue
+        orig = getattr(module, "_orig_mod", None)
+        if isinstance(orig, nn.Module) and orig is not module:
+            module = orig
+            continue
+        if isinstance(module, DistributedDataParallel):
+            module = module.module
+            continue
+        break
+    return module
 
 
 class AgentBase(ABC):
@@ -238,15 +267,24 @@ class DDPAgentWrapper(AgentWrapper):
                 dist.broadcast(p.data, src=0)
 
     def _unwrapped(self):
-        """Context manager: temporarily swap DDP modules for their .module (unwrapped) counterparts."""
+        """Context manager: temporarily swap wrapped models for their bare nn.Module.
+
+        Peels CUDAGraphWrapper, torch.compile, and DDP so ``state_dict`` and
+        ``load_state_dict`` operate on the underlying parameters directly.
+        Without full unwrap, ``OptimizedModule(DDP(...))`` keeps the
+        ``_orig_mod.module.`` key prefix on its state dict and ``_load_state``
+        would mismatch after ``strip_wrapper_prefixes``. Target networks are
+        also unwrapped: they aren't DDP-wrapped but ``compile()`` still puts
+        them under ``CUDAGraphWrapper(torch.compile(...))``.
+        """
         from contextlib import contextmanager
 
         @contextmanager
         def ctx():
             wrapped = {}
-            for attr, module in self._agent.models():
+            for attr, module in self._agent.models() + self._agent.target_models():
                 wrapped[attr] = module
-                setattr(self._agent._impl, attr, module.module)
+                setattr(self._agent._impl, attr, unwrap_module(module))
             try:
                 yield
             finally:

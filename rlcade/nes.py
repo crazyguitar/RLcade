@@ -54,8 +54,7 @@ class Nes:
 
     def _choose_action(self, obs):
         obs_tensor = torch.from_numpy(obs).float().to(self.device)
-        action, _, _ = self.agent.get_action(obs_tensor)
-        return action.item()
+        return int(self.agent.act(obs_tensor, deterministic=True))
 
     @staticmethod
     def limit_fps(frame_start: float):

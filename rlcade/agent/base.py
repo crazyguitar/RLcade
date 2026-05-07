@@ -11,6 +11,22 @@ from torch.distributed.checkpoint._state_dict_stager import StateDictStager
 from rlcade.utils import to_tensor
 
 
+def strip_wrapper_prefixes(sd: dict) -> dict:
+    """Drop `_orig_mod.` (torch.compile), `module.` (DDP), and `_module.` (CUDAGraphWrapper) prefixes."""
+    prefixes = ("_orig_mod.", "module.", "_module.")
+    out = {}
+    for k, v in sd.items():
+        while isinstance(k, str):
+            for p in prefixes:
+                if k.startswith(p):
+                    k = k[len(p):]
+                    break
+            else:
+                break
+        out[k] = v
+    return out
+
+
 class AgentBase(ABC):
     """Base class for single-env and vec-env agent implementations."""
 
@@ -144,6 +160,9 @@ class Agent:
 
     def get_action(self, obs, **kwargs):
         return self._impl.get_action(obs, **kwargs)
+
+    def act(self, obs, **kwargs):
+        return self._impl.act(obs, **kwargs)
 
     def evaluate(self, env, num_episodes: int = 5) -> list[float]:
         return self._impl.evaluate(env, num_episodes)

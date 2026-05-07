@@ -23,7 +23,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 
-from rlcade.agent.base import AgentBase, EnvAgentMixin, VecAgentMixin, Agent, is_vector_env
+from rlcade.agent.base import AgentBase, EnvAgentMixin, VecAgentMixin, Agent, is_vector_env, strip_wrapper_prefixes
 from rlcade.modules import create_actor, create_qnet, build_encoder_kwargs, parse_channels
 from rlcade.utils import to_tensor, clip_grad_norm_, soft_update
 from rlcade.utils.amp import resolve_amp_device_type, create_grad_scaler
@@ -339,11 +339,11 @@ class SACBase(AgentBase):
         return state.get("step", 0)
 
     def _load_state(self, state: dict) -> int:
-        self.actor.load_state_dict(state["actor"])
-        self.q1.load_state_dict(state["q1"])
-        self.q2.load_state_dict(state["q2"])
-        self.q1_target.load_state_dict(state["q1_target"])
-        self.q2_target.load_state_dict(state["q2_target"])
+        self.actor.load_state_dict(strip_wrapper_prefixes(state["actor"]))
+        self.q1.load_state_dict(strip_wrapper_prefixes(state["q1"]))
+        self.q2.load_state_dict(strip_wrapper_prefixes(state["q2"]))
+        self.q1_target.load_state_dict(strip_wrapper_prefixes(state["q1_target"]))
+        self.q2_target.load_state_dict(strip_wrapper_prefixes(state["q2_target"]))
         return self._load_optimizer_state(state)
 
     def load_non_model_state(self, state: dict) -> int:

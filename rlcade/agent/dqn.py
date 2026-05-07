@@ -14,7 +14,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from rlcade.agent.base import AgentBase, EnvAgentMixin, VecAgentMixin, Agent, is_vector_env
+from rlcade.agent.base import AgentBase, EnvAgentMixin, VecAgentMixin, Agent, is_vector_env, strip_wrapper_prefixes
 from rlcade.modules import create_qnet, build_encoder_kwargs, parse_channels
 from rlcade.utils import to_tensor, clip_grad_norm_, soft_update
 from rlcade.utils.amp import resolve_amp_device_type, create_grad_scaler
@@ -230,8 +230,8 @@ class DQNBase(AgentBase):
         return data
 
     def _load_state(self, state: dict) -> int:
-        self.qnet.load_state_dict(state["qnet"])
-        self.target.load_state_dict(state["target"])
+        self.qnet.load_state_dict(strip_wrapper_prefixes(state["qnet"]))
+        self.target.load_state_dict(strip_wrapper_prefixes(state["target"]))
         if "optimizer" in state and self.optimizer is not None:
             self.optimizer.load_state_dict(state["optimizer"])
         if hasattr(self, "scaler") and self.scaler is not None and "grad_scaler" in state:
@@ -625,8 +625,8 @@ class RainbowDQNBase(AgentBase):
         return data
 
     def _load_state(self, state: dict) -> int:
-        self.qnet.load_state_dict(state["qnet"])
-        self.target.load_state_dict(state["target"])
+        self.qnet.load_state_dict(strip_wrapper_prefixes(state["qnet"]))
+        self.target.load_state_dict(strip_wrapper_prefixes(state["target"]))
         if "optimizer" in state and self.optimizer is not None:
             self.optimizer.load_state_dict(state["optimizer"])
         if hasattr(self, "scaler") and self.scaler is not None and "grad_scaler" in state:

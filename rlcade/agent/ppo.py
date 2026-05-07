@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from abc import abstractmethod
 from torch.distributions import Categorical
-from rlcade.agent.base import AgentBase, EnvAgentMixin, VecAgentMixin, Agent, is_vector_env
+from rlcade.agent.base import AgentBase, EnvAgentMixin, VecAgentMixin, Agent, is_vector_env, strip_wrapper_prefixes
 from rlcade.modules import create_actor, create_critic, build_encoder_kwargs, parse_channels
 from rlcade.modules.lstm import LstmActorCritic
 from rlcade.modules.icm import ICM
@@ -384,12 +384,12 @@ class PPOBase(AgentBase):
         return data
 
     def _load_state(self, state: dict) -> int:
-        self.actor.load_state_dict(state["actor"])
-        self.critic.load_state_dict(state["critic"])
+        self.actor.load_state_dict(strip_wrapper_prefixes(state["actor"]))
+        self.critic.load_state_dict(strip_wrapper_prefixes(state["critic"]))
         if self.optimizer is not None and "optimizer" in state:
             self.optimizer.load_state_dict(state["optimizer"])
         if self.icm is not None and "icm" in state:
-            self.icm.load_state_dict(state["icm"])
+            self.icm.load_state_dict(strip_wrapper_prefixes(state["icm"]))
         if hasattr(self, "scaler") and self.scaler is not None and "grad_scaler" in state:
             self.scaler.load_state_dict(state["grad_scaler"])
         return state.get("step", 0)
@@ -904,11 +904,11 @@ class LstmPPOBase(AgentBase):
     def _load_state(self, state):
         if "model" not in state:
             return 0  # incompatible checkpoint (e.g. old PPO format)
-        self.model.load_state_dict(state["model"])
+        self.model.load_state_dict(strip_wrapper_prefixes(state["model"]))
         if self.optimizer is not None and "optimizer" in state:
             self.optimizer.load_state_dict(state["optimizer"])
         if self.icm is not None and "icm" in state:
-            self.icm.load_state_dict(state["icm"])
+            self.icm.load_state_dict(strip_wrapper_prefixes(state["icm"]))
         if hasattr(self, "scaler") and self.scaler is not None and "grad_scaler" in state:
             self.scaler.load_state_dict(state["grad_scaler"])
         return state.get("step", 0)

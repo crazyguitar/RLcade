@@ -1,7 +1,7 @@
 from rlcade.agent.ppo import PPO, PPOConfig, LstmPPO, LstmPPOConfig
 from rlcade.agent.dqn import DQN, DQNConfig, RainbowDQN, RainbowDQNConfig
 from rlcade.agent.sac import SAC, SACConfig
-from rlcade.agent.base import AgentWrapper, wrap_agent
+from rlcade.agent.base import AgentWrapper, strip_wrapper_prefixes, wrap_agent
 from rlcade.checkpoint.checkpoint import Checkpoint
 from rlcade.checkpoint.safetensors import load_safetensors
 
@@ -43,7 +43,7 @@ def _load_safetensors_into(agent, url: str, device) -> None:
     impl = agent._impl if hasattr(agent, "_impl") else agent
     for name, sd in state.items():
         module = _resolve_attr(impl, name)
-        module.load_state_dict(sd)
+        module.load_state_dict(strip_wrapper_prefixes(sd))
 
 
 def _resolve_attr(impl, name: str):

@@ -186,6 +186,20 @@ bash examples/dqn/rainbow_dqn.sh
 bash examples/sac/sac.sh
 ```
 
+### Upload to Hugging Face
+
+Training scripts can export `.safetensors` via `--safetensors-path`. For sharing on the Hub, prefer uploading the `.safetensors` weights plus metadata; optionally include the `.pt` checkpoint if you want to preserve optimizer/resume state.
+
+```sh
+tools/hf.sh \
+  --repo-id <user-or-org>/rlcade-rainbow-dqn-smb \
+  --agent rainbow_dqn \
+  --safetensors checkpoints/rainbow_dqn_smb.safetensors \
+  --checkpoint checkpoints/rainbow_dqn_smb.pt \
+  --include-pt \
+  --actions complex
+```
+
 ### Script summary
 
 | Script | Agent | Features |

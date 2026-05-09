@@ -5,6 +5,7 @@ def add_model_args(parser):
     parser.add_argument("--agent", type=str, default="ppo", help="Agent type")
     parser.add_argument("--actor", type=str, default="actor", help="Actor network name")
     parser.add_argument("--critic", type=str, default="critic", help="Critic network name")
+    parser.add_argument("--qnet", type=str, default="qnet", help="Q-network name")
     parser.add_argument("--checkpoint", type=str, default=None, help="Path to checkpoint")
     parser.add_argument("--device", type=str, default="auto", help="Torch device (auto, cpu, cuda, cuda:0, ...)")
     # Encoder selection

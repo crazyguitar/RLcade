@@ -34,6 +34,20 @@ def _build_plugins(args):
 
         plugins.append(TensorBoardPlugin(log_dir=args.tensorboard))
 
+    if getattr(args, "mlflow", None) is not None:
+        from rlcade.plugins.mlflow import MLflowPlugin
+
+        plugins.append(
+            MLflowPlugin(
+                tracking_uri=args.mlflow or None,
+                experiment=args.mlflow_experiment,
+                run_name=args.mlflow_run_name,
+                checkpoint_path=args.checkpoint_path,
+                safetensors_path=getattr(args, "safetensors_path", ""),
+                args=args,
+            )
+        )
+
     if getattr(args, "nsys", False):
         from rlcade.plugins.nsys import NsysPlugin
 

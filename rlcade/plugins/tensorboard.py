@@ -3,21 +3,7 @@
 from torch.utils.tensorboard import SummaryWriter
 
 from rlcade.plugins import TrainerPlugin
-
-# summary key → (tensorboard tag, group)
-_SCALAR_MAP = {
-    "score": "reward/mean_score",
-    "steps": "reward/total_steps",
-    "policy_loss": "loss/policy",
-    "value_loss": "loss/value",
-    "entropy": "loss/entropy",
-    "loss": "loss/total",
-    "kl": "policy/kl",
-    "clip_fraction": "policy/clip_fraction",
-    "sps": "time/sps",
-    "rollout": "time/rollout",
-    "train": "time/train",
-}
+from rlcade.plugins._metric_keys import SCALAR_MAP as _SCALAR_MAP
 
 
 class TensorBoardPlugin(TrainerPlugin):

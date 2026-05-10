@@ -16,12 +16,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+      - uses: astral-sh/setup-uv@v8
       - name: Setup virtualenv
         run: |
-          python -m venv .venv
+          uv venv .venv
           echo "$PWD/.venv/bin" >> $GITHUB_PATH
       - name: Install dependencies
-        run: pip install maturin black
+        run: uv pip install black
       - name: Format
         run: make fmt
       - name: Install

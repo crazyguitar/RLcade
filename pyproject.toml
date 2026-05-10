@@ -39,6 +39,8 @@ all = ["nes[rlcade,notebook,ray,cuda,s3]"]
 manifest-path = "crates/rlcade/Cargo.toml"
 module-name = "nes"
 python-packages = ["rlcade"]
+profile = "release"
+editable-profile = "release"
 
 [tool.black]
 line-length = 120

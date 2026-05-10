@@ -40,7 +40,9 @@ A PyTorch-based reinforcement learning framework for playing games. RLcade provi
 - [Rust](https://www.rust-lang.org/tools/install) (1.85+)
 - SDL2
 - Python 3.10+
-- [maturin](https://www.maturin.rs/) (`pip install maturin`)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) (`brew install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`)
+
+> Note: `maturin` is bootstrapped automatically by `uv` via PEP 517 (declared in `pyproject.toml` build-system requires).
 
 ### Install SDL2
 
@@ -59,7 +61,7 @@ sudo apt install libsdl2-dev
 ### Install
 
 ```sh
-python3 -m venv .venv
+uv venv .venv
 source .venv/bin/activate
 make install
 ```

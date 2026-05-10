@@ -15,6 +15,9 @@ A PyTorch-based reinforcement learning framework for playing games. RLcade provi
   - [Pinned-memory H2D staging](rlcade/utils/pin_memory.py) for async rollout transfers (default on, `--no-pin-memory` to disable)
   - [GPU affinity](rlcade/utils/affinity.py) — NUMA-aware CPU binding for multi-GPU training
 - **Profiling**: [VizTracer](rlcade/plugins/viztracer.py), [Nsight Systems](rlcade/plugins/nsys.py), and [CUDA Memory Profiler](rlcade/plugins/memory_profiler.py) integration
+- **Experiment Tracking**:
+  - [TensorBoard](rlcade/plugins/tensorboard.py) — scalar metrics + eval scores (`--tensorboard <dir>`)
+  - [MLflow](rlcade/plugins/mlflow.py) — metrics, eval scores, hyperparameters as params, and final-checkpoint artifacts to any tracking server (`--mlflow <uri>`)
 - **Checkpointing**:
   - Local and [S3](rlcade/checkpoint/s3.py) filesystem backends
   - [Async writes](rlcade/plugins/async_checkpoint.py) (`--async-checkpoint`) — non-blocking periodic saves with CPU offload

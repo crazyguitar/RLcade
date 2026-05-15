@@ -329,6 +329,9 @@ class _Tiny(nn.Module):
         self.encoder = nn.Sequential(nn.Linear(4, 4), nn.ReLU(), nn.Linear(4, 4))
 
 
+_DIST_ENV_KEYS = ("MASTER_ADDR", "MASTER_PORT", "RANK", "WORLD_SIZE")
+
+
 def _init_single_rank_gloo():
     """Init a world_size=1 gloo group so DistributedDataParallel can wrap on CPU."""
     if dist.is_initialized():
@@ -339,6 +342,14 @@ def _init_single_rank_gloo():
     os.environ.update({"MASTER_ADDR": "localhost", "MASTER_PORT": str(port), "RANK": "0", "WORLD_SIZE": "1"})
     dist.init_process_group("gloo")
     return True
+
+
+def _teardown_single_rank_gloo():
+    """Destroy the gloo group and clear env vars so later tests don't see a polluted state."""
+    if dist.is_initialized():
+        dist.destroy_process_group()
+    for k in _DIST_ENV_KEYS:
+        os.environ.pop(k, None)
 
 
 class TestUnwrapModule:
@@ -367,7 +378,7 @@ class TestUnwrapModule:
             assert unwrap_module(chain) is m
         finally:
             if owns_pg:
-                dist.destroy_process_group()
+                _teardown_single_rank_gloo()
 
 
 class TestDDPWrapperLoadFullChain:
@@ -396,7 +407,7 @@ class TestDDPWrapperLoadFullChain:
                 assert torch.equal(target.state_dict()[k], v)
         finally:
             if owns_pg:
-                dist.destroy_process_group()
+                _teardown_single_rank_gloo()
 
     def test_unwrapped_covers_target_networks(self):
         """DDPAgentWrapper._unwrapped() must also unwrap target_models().

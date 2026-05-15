@@ -27,7 +27,8 @@ class Distributed:
         self._distributed = False
 
         if "RANK" in os.environ:
-            dist.init_process_group(backend=backend)
+            if not dist.is_initialized():
+                dist.init_process_group(backend=backend)
             self._rank = dist.get_rank()
             self._local_rank = int(os.environ.get("LOCAL_RANK", 0))
             self._world_size = dist.get_world_size()

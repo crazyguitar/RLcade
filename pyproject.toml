@@ -36,7 +36,10 @@ s3 = [
 mlflow = [
     "mlflow>=2.10",
 ]
-all = ["nes[rlcade,notebook,ray,cuda,s3,mlflow]"]
+wandb = [
+    "wandb>=0.17",
+]
+all = ["nes[rlcade,notebook,ray,cuda,s3,mlflow,wandb]"]
 
 [tool.maturin]
 manifest-path = "crates/rlcade/Cargo.toml"

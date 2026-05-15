@@ -4,27 +4,28 @@ A PyTorch-based reinforcement learning framework for playing games. RLcade provi
 
 ## Key Features
 
-- **RL Algorithms**: [PPO](rlcade/agent/ppo.py), [DQN](rlcade/agent/dqn.py) (Double + Dueling), [Rainbow DQN](rlcade/agent/dqn.py) (C51 + PER + NoisyNet + N-step), [SAC-Discrete](rlcade/agent/sac.py)
-- **Encoders**: [CNN](rlcade/modules/encoders.py), [LSTM](rlcade/modules/encoders.py), [IMPALA ResNet](rlcade/modules/encoders.py) -- pluggable via `--encoder`
-- **Exploration**: [ICM](rlcade/modules/icm.py) (Intrinsic Curiosity Module) for sparse-reward environments
-- **Curriculum Learning**: [Progressive stage unlock](rlcade/plugins/curriculum.py) based on agent performance
-- **Distributed Training**: [DDP and FSDP2](rlcade/agent/base.py) with multiple launch backends (elastic, mp, Ray)
+- **Algorithms**: [PPO](rlcade/agent/ppo.py), [DQN](rlcade/agent/dqn.py) (Double + Dueling), [Rainbow DQN](rlcade/agent/dqn.py) (C51 + PER + NoisyNet + N-step), [SAC-Discrete](rlcade/agent/sac.py)
+- **Encoders**: CNN, LSTM, IMPALA ResNet ([encoders.py](rlcade/modules/encoders.py)); pluggable via `--encoder`
+- **Exploration**: [ICM](rlcade/modules/icm.py) for sparse rewards
+- **Curriculum**: [progressive stage unlock by score](rlcade/plugins/curriculum.py)
+- **Distributed**: [DDP / FSDP2](rlcade/agent/base.py) with elastic / mp / Ray launchers
 - **Performance**:
-  - `torch.compile` + [CUDA graph capture](rlcade/graph/__init__.py) (default on CUDA, `--eager` to disable)
-  - [Mixed precision (AMP)](rlcade/utils/amp.py) + gradient accumulation
-  - [Pinned-memory H2D staging](rlcade/utils/pin_memory.py) for async rollout transfers (default on, `--no-pin-memory` to disable)
-  - [GPU affinity](rlcade/utils/affinity.py) — NUMA-aware CPU binding for multi-GPU training
-- **Profiling**: [VizTracer](rlcade/plugins/viztracer.py), [Nsight Systems](rlcade/plugins/nsys.py), and [CUDA Memory Profiler](rlcade/plugins/memory_profiler.py) integration
-- **Experiment Tracking**:
-  - [TensorBoard](rlcade/plugins/tensorboard.py) — scalar metrics + eval scores (`--tensorboard <dir>`)
-  - [MLflow](rlcade/plugins/mlflow.py) — metrics, eval scores, hyperparameters as params, and final-checkpoint artifacts to any tracking server (`--mlflow <uri>`)
+  - `torch.compile` + [CUDA graphs](rlcade/graph/__init__.py) (`--eager` to disable)
+  - [AMP](rlcade/utils/amp.py) + gradient accumulation
+  - [Pinned-memory H2D staging](rlcade/utils/pin_memory.py) (`--no-pin-memory` to disable)
+  - [NUMA-aware GPU affinity](rlcade/utils/affinity.py) for multi-GPU
+- **Profiling**: [VizTracer](rlcade/plugins/viztracer.py), [Nsight Systems](rlcade/plugins/nsys.py), [CUDA memory profiler](rlcade/plugins/memory_profiler.py)
+- **Experiment Tracking** (all log metrics, eval scores, hyperparams, and final-checkpoint artifacts):
+  - [TensorBoard](rlcade/plugins/tensorboard.py) (`--tensorboard <dir>`)
+  - [MLflow](rlcade/plugins/mlflow.py) (`--mlflow <uri>`)
+  - [Weights & Biases](rlcade/plugins/wandb.py) (`--wandb [base-url]`)
 - **Checkpointing**:
-  - Local and [S3](rlcade/checkpoint/s3.py) filesystem backends
-  - [Async writes](rlcade/plugins/async_checkpoint.py) (`--async-checkpoint`) — non-blocking periodic saves with CPU offload
-  - [Safetensors](rlcade/plugins/safetensors_export.py) export and load (`--safetensors-path`)
-  - Cross-strategy compatible — local/DDP/FSDP2 checkpoints are interchangeable
-- **NES Emulator**: Rust core with [PyO3 bindings](crates/), supporting 5 mappers (NROM, MMC1, UxROM, CNROM, MMC3)
-- **WASM Support**: [wasm-bindgen bindings](crates/rlcade/src/wasm.rs) for running the NES emulator and SMB environment in browsers and Jupyter notebooks
+  - Local + [S3](rlcade/checkpoint/s3.py) backends
+  - [Async writes](rlcade/plugins/async_checkpoint.py) (`--async-checkpoint`)
+  - [Safetensors](rlcade/plugins/safetensors_export.py) export/load (`--safetensors-path`)
+  - Local / DDP / FSDP2 checkpoints interchangeable
+- **NES emulator**: Rust core + [PyO3 bindings](crates/), 5 mappers (NROM, MMC1, UxROM, CNROM, MMC3)
+- **WASM**: [wasm-bindgen bindings](crates/rlcade/src/wasm.rs) for in-browser / Jupyter use
 
 ## Supported Mappers
 

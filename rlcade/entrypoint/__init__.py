@@ -48,6 +48,21 @@ def _build_plugins(args):
             )
         )
 
+    if getattr(args, "wandb", None) is not None:
+        from rlcade.plugins.wandb import WandbPlugin
+
+        plugins.append(
+            WandbPlugin(
+                base_url=args.wandb or None,
+                entity=args.wandb_entity,
+                project=args.wandb_project,
+                run_name=args.wandb_run_name,
+                checkpoint_path=args.checkpoint_path,
+                safetensors_path=getattr(args, "safetensors_path", ""),
+                args=args,
+            )
+        )
+
     if getattr(args, "nsys", False):
         from rlcade.plugins.nsys import NsysPlugin
 
